@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الاختبارات - لوحة المعلم</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f7ff;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e6e 0%, #4a7dff 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px 15px 0 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 10px 10px 0 0;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 100, 0.1);
+        }
+        
+        .tab {
+            padding: 18px 30px;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            color: #555;
+        }
+        
+        .tab.active {
+            color: #4a7dff;
+            border-bottom: 3px solid #4a7dff;
+            background-color: #f8fbff;
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 100, 0.08);
+            margin-bottom: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #2c3e6e;
+            font-size: 17px;
+        }
+        
+        input[type="text"], textarea, select, input[type="datetime-local"] {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e1e9f5;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s ease;
+        }
+        
+        input[type="text"]:focus, textarea:focus, select:focus, input[type="datetime-local"]:focus {
+            border-color: #4a7dff;
+            outline: none;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .options-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .option-input {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .option-input span {
+            font-weight: bold;
+            color: #4a7dff;
+            margin-left: 10px;
+            min-width: 25px;
+        }
+        
+        .correct-answer {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f0f7ff;
+            border-radius: 8px;
+            border-right: 4px solid #4a7dff;
+        }
+        
+        .question-item {
+            background-color: #f9fbff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e1e9f5;
+            position: relative;
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .question-number {
+            background-color: #4a7dff;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .question-points {
+            background-color: #2ecc71;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background-color: #4a7dff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a6def;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(58, 109, 239, 0.3);
+        }
+        
+        .btn-secondary {
+            background-color: #f0f7ff;
+            color: #4a7dff;
+            border: 2px solid #4a7dff;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e1edff;
+        }
+        
+        .btn-danger {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #ff5252;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .students-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 3px 10px rgba(0, 0, 100, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .students-table th {
+            background-color: #4a7dff;
+            color: white;
+            padding: 18px;
+            text-align: right;
+        }
+        
+        .students-table td {
+            padding: 16px;
+            border-bottom: 1px solid #eaeff5;
+        }
+        
+        .students-table tr:hover {
+            background-color: #f9fbff;
+        }
+        
+        .student-score {
+            font-weight: bold;
+            font-size: 18px;
+            color: #2c3e6e;
+        }
+        
+        .student-pass {
+            color: #2ecc71;
+        }
+        
+        .student-fail {
+            color: #e74c3c;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7b8ab8;
+            font-size: 18px;
+        }
+        
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            display: block;
+            color: #d1dbf9;
+        }
+        
+        .test-link {
+            background-color: #f0f7ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px dashed #b8d0ff;
+            font-family: monospace;
+            word-break: break-all;
+            direction: ltr;
+            text-align: center;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background-color: #2ecc71;
+            color: white;
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+            display: none;
+            z-index: 1000;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .notification.error {
+            background-color: #e74c3c;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .notification.warning {
+            background-color: #f39c12;
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+        }
+        
+        .export-import {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .export-import textarea {
+            font-family: monospace;
+            min-height: 200px;
+            direction: ltr;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .datetime-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .datetime-group > div {
+            flex: 1;
+        }
+        
+        .import-students {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .students-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #e1e9f5;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eaeff5;
+        }
+        
+        .student-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .datetime-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>نظام الاختبارات الإلكترونية</h1>
+            <div class="subtitle">لوحة تحكم المعلم - إدارة الاختبارات والطلاب</div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="create-test">إنشاء اختبار جديد</div>
+            <div class="tab" data-tab="import-students">إدارة الطلاب</div>
+            <div class="tab" data-tab="view-results">نتائج الطلاب</div>
+            <div class="tab" data-tab="manage-tests">إدارة الاختبارات</div>
+        </div>
+        
+        <!-- تبويب إنشاء اختبار -->
+        <div id="create-test" class="tab-content active">
+            <h2>إنشاء اختبار جديد</h2>
+            
+            <div class="form-group">
+                <label for="test-title">عنوان الاختبار:</label>
+                <input type="text" id="test-title" placeholder="أدخل عنوان الاختبار (مثال: اختبار الفصل الأول في العلوم)">
+            </div>
+            
+            <div class="form-group">
+                <label for="test-description">وصف الاختبار:</label>
+                <textarea id="test-description" placeholder="أدخل وصفاً للاختبار (اختياري)"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>أسئلة الاختبار:</label>
+                <div id="questions-container">
+                    <!-- ستتم إضافة الأسئلة هنا ديناميكياً -->
+                </div>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" id="add-question">
+                        <span>+ إضافة سؤال جديد</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>إعدادات الاختبار:</label>
+                <div style="background-color: #f0f7ff; padding: 20px; border-radius: 10px;">
+                    <div style="margin-bottom: 15px;">
+                        <input type="checkbox" id="auto-correct" checked>
+                        <label for="auto-correct" style="display: inline; margin-right: 10px;">التصحيح التلقائي عند إرسال الإجابات</label>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label for="passing-score">درجة النجاح (النسبة المئوية):</label>
+                        <input type="number" id="passing-score" min="0" max="100" value="60" style="width: 100px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label for="max-attempts">عدد المحاولات المسموحة لكل طالب:</label>
+                        <select id="max-attempts" style="width: 150px;">
+                            <option value="1">مرة واحدة</option>
+                            <option value="2" selected>مرتين</option>
+                        </select>
+                        <p style="margin-top: 5px; font-size: 14px; color: #666;">يمكن للمعلم منح محاولات إضافية لطالب معين من صفحة النتائج</p>
+                    </div>
+                    
+                    <div class="datetime-group">
+                        <div>
+                            <label for="start-date">تاريخ ووقت بداية الاختبار:</label>
+                            <input type="datetime-local" id="start-date">
+                        </div>
+                        <div>
+                            <label for="end-date">تاريخ ووقت نهاية الاختبار:</label>
+                            <input type="datetime-local" id="end-date">
+                        </div>
+                    </div>
+                    <p style="margin-top: 5px; font-size: 14px; color: #666;">إذا تركت الحقول فارغة، سيكون الاختبار متاحاً دائماً</p>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button type="button" class="btn btn-success" id="save-test">
+                    <span>💾 حفظ الاختبار</span>
+                </button>
+                <button type="button" class="btn btn-secondary" id="preview-test">
+                    <span>👁️ معاينة الاختبار</span>
+                </button>
+                <button type="button" class="btn btn-secondary" id="export-test">
+                    <span>📥 تصدير الاختبار</span>
+                </button>
+                <button type="button" class="btn btn-secondary" id="import-test">
+                    <span>📤 استيراد اختبار</span>
+                </button>
+            </div>
+            
+            <div id="test-link-container" style="display: none;">
+                <h3>رابط اختبار الطلاب:</h3>
+                <div class="test-link" id="test-link"></div>
+                <p>ارسل هذا الرابط للطلاب لبدء الاختبار</p>
+            </div>
+        </div>
+        
+        <!-- تبويب إدارة الطلاب -->
+        <div id="import-students" class="tab-content">
+            <h2>إدارة قائمة الطلاب</h2>
+            
+            <div class="import-students">
+                <h3>استيراد قائمة الطلاب من ملف Excel</h3>
+                <p>يمكنك استيراد قائمة الطلاب من ملف CSV (ملف Excel). يجب أن يحتوي الملف على عمودين: "رقم الطالب" و "اسم الطالب".</p>
+                
+                <div class="actions">
+                    <button type="button" class="btn btn-warning" id="import-students-btn">
+                        <span>📋 استيراد قائمة الطلاب (CSV)</span>
+                    </button>
+                    <button type="button" class="btn btn-primary" id="download-template">
+                        <span>📄 تحميل نموذج ملف CSV</span>
+                    </button>
+                </div>
+                
+                <div id="current-students" style="margin-top: 30px;">
+                    <h4>قائمة الطلاب الحالية:</h4>
+                    <div id="students-list-container">
+                        <div class="empty-state" id="no-students">
+                            <div>👨‍🎓</div>
+                            <p>لا توجد قائمة طلاب مستوردة</p>
+                            <p>استورد قائمة الطلاب من ملف CSV لعرضها هنا</p>
+                        </div>
+                        <div class="students-list" id="students-list" style="display: none;">
+                            <!-- ستتم إضافة قائمة الطلاب هنا -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions" style="margin-top: 20px;">
+                    <button type="button" class="btn btn-danger" id="clear-students">
+                        <span>🗑️ حذف جميع الطلاب</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div style="margin-top: 40px; background-color: #f9fbff; padding: 20px; border-radius: 10px;">
+                <h4>تعليمات استيراد الطلاب:</h4>
+                <ol style="line-height: 1.8;">
+                    <li>انقر على زر "تحميل نموذج ملف CSV" لتحميل ملف النموذج</li>
+                    <li>املأ الملف بأرقام وأسماء الطلاب</li>
+                    <li>احفظ الملف بصيغة CSV</li>
+                    <li>انقر على زر "استيراد قائمة الطلاب" واختر الملف</li>
+                    <li>ستظهر قائمة الطلاب هنا بعد الاستيراد</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- تبويب نتائج الطلاب -->
+        <div id="view-results" class="tab-content">
+            <h2>نتائج الطلاب</h2>
+            
+            <div id="results-container">
+                <div class="empty-state" id="no-results">
+                    <div>📊</div>
+                    <p>لا توجد نتائج للطلاب بعد</p>
+                    <p>بمجرد إرسال الطلاب لإجاباتهم، ستظهر النتائج هنا</p>
+                </div>
+                
+                <table class="students-table" id="results-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>اسم الطالب</th>
+                            <th>رقم السجل</th>
+                            <th>الاختبار</th>
+                            <th>الدرجة</th>
+                            <th>المحاولات</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الإرسال</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- ستتم إضافة نتائج الطلاب هنا -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="actions" id="results-actions" style="display: none;">
+                <button type="button" class="btn btn-primary" id="export-results">
+                    <span>📊 تصدير النتائج (CSV)</span>
+                </button>
+                <button type="button" class="btn btn-danger" id="clear-results">
+                    <span>🗑️ حذف جميع النتائج</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- تبويب إدارة الاختبارات -->
+        <div id="manage-tests" class="tab-content">
+            <h2>إدارة الاختبارات المخزنة</h2>
+            
+            <div id="tests-list">
+                <!-- قائمة الاختبارات المخزنة -->
+            </div>
+            
+            <div class="export-import">
+                <div style="flex: 1;">
+                    <h3>تصدير جميع البيانات</h3>
+                    <textarea id="export-data" readonly placeholder="ستظهر بيانات التصدير هنا"></textarea>
+                    <button type="button" class="btn btn-primary" id="generate-export">توليد بيانات التصدير</button>
+                </div>
+                
+                <div style="flex: 1;">
+                    <h3>استيراد بيانات</h3>
+                    <textarea id="import-data" placeholder="الصق بيانات الاستيراد هنا"></textarea>
+                    <button type="button" class="btn btn-success" id="execute-import">استيراد البيانات</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <!-- نموذج سؤال قالب -->
+    <template id="question-template">
+        <div class="question-item" data-question-id="">
+            <div class="question-header">
+                <div class="question-number">1</div>
+                <div class="question-points">1 نقطة</div>
+            </div>
+            
+            <div class="form-group">
+                <label>نص السؤال:</label>
+                <textarea class="question-text" placeholder="أدخل نص السؤال هنا"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>خيارات الإجابة:</label>
+                <div class="options-container">
+                    <div class="option-input">
+                        <span>أ.</span>
+                        <input type="text" class="option-a" placeholder="النص الخيار أ">
+                    </div>
+                    <div class="option-input">
+                        <span>ب.</span>
+                        <input type="text" class="option-b" placeholder="النص الخيار ب">
+                    </div>
+                    <div class="option-input">
+                        <span>ج.</span>
+                        <input type="text" class="option-c" placeholder="النص الخيار ج">
+                    </div>
+                    <div class="option-input">
+                        <span>د.</span>
+                        <input type="text" class="option-d" placeholder="النص الخيار د">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="correct-answer">
+                <label>الإجابة الصحيحة:</label>
+                <select class="correct-option">
+                    <option value="a">أ</option>
+                    <option value="b">ب</option>
+                    <option value="c">ج</option>
+                    <option value="d">د</option>
+                </select>
+                
+                <div style="margin-top: 15px;">
+                    <label>درجة السؤال:</label>
+                    <input type="number" class="question-points-input" min="1" max="10" value="1" style="width: 100px;">
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: left;">
+                <button type="button" class="btn btn-danger delete-question">حذف السؤال</button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // متغيرات النظام
+        let currentTest = null;
+        let testResults = {};
+        let savedTests = {};
+        let studentsList = {};
+        
+        // تهيئة النظام عند التحميل
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedData();
+            setupEventListeners();
+            initializeTabs();
+            addFirstQuestion();
+            loadStudentsList();
+            loadResults();
+            loadTestsList();
+        });
+        
+        // تحميل البيانات المخزنة
+        function loadSavedData() {
+            // تحميل الاختبارات المخزنة
+            const savedTestsData = localStorage.getItem('teacher_tests');
+            if (savedTestsData) {
+                savedTests = JSON.parse(savedTestsData);
+            }
+            
+            // تحميل نتائج الطلاب
+            const savedResults = localStorage.getItem('test_results');
+            if (savedResults) {
+                testResults = JSON.parse(savedResults);
+            }
+            
+            // تحميل قائمة الطلاب
+            const savedStudents = localStorage.getItem('students_list');
+            if (savedStudents) {
+                studentsList = JSON.parse(savedStudents);
+            }
+        }
+        
+        // إعداد مستمعي الأحداث
+        function setupEventListeners() {
+            // إضافة سؤال جديد
+            document.getElementById('add-question').addEventListener('click', addQuestion);
+            
+            // حفظ الاختبار
+            document.getElementById('save-test').addEventListener('click', saveTest);
+            
+            // معاينة الاختبار
+            document.getElementById('preview-test').addEventListener('click', previewTest);
+            
+            // تصدير الاختبار
+            document.getElementById('export-test').addEventListener('click', exportTest);
+            
+            // استيراد الاختبار
+            document.getElementById('import-test').addEventListener('click', importTest);
+            
+            // استيراد الطلاب
+            document.getElementById('import-students-btn').addEventListener('click', importStudents);
+            
+            // تحميل نموذج CSV
+            document.getElementById('download-template').addEventListener('click', downloadTemplate);
+            
+            // حذف الطلاب
+            document.getElementById('clear-students').addEventListener('click', clearStudents);
+            
+            // تصدير النتائج
+            document.getElementById('export-results').addEventListener('click', exportResults);
+            
+            // حذف النتائج
+            document.getElementById('clear-results').addEventListener('click', clearResults);
+            
+            // توليد بيانات التصدير
+            document.getElementById('generate-export').addEventListener('click', generateExportData);
+            
+            // تنفيذ الاستيراد
+            document.getElementById('execute-import').addEventListener('click', executeImportData);
+        }
+        
+        // تهيئة التبويبات
+        function initializeTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // إزالة النشاط من جميع التبويبات
+                    tabs.forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // إضافة النشاط للتبويب المحدد
+                    this.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+        
+        // إضافة السؤال الأول
+        function addFirstQuestion() {
+            addQuestion();
+        }
+        
+        // إضافة سؤال جديد
+        function addQuestion() {
+            const questionsContainer = document.getElementById('questions-container');
+            const questionTemplate = document.getElementById('question-template');
+            const questionElement = questionTemplate.content.cloneNode(true);
+            
+            const questionCount = questionsContainer.children.length + 1;
+            const questionDiv = questionElement.querySelector('.question-item');
+            questionDiv.setAttribute('data-question-id', questionCount);
+            
+            // تحديث رقم السؤال
+            questionDiv.querySelector('.question-number').textContent = questionCount;
+            
+            // تحديث معرّف حقل النقاط
+            const pointsInput = questionDiv.querySelector('.question-points-input');
+            pointsInput.id = `points-${questionCount}`;
+            
+            // تحديث نص عرض النقاط
+            questionDiv.querySelector('.question-points').textContent = `${pointsInput.value} نقطة`;
+            
+            // تحديث عرض النقاط عند تغيير القيمة
+            pointsInput.addEventListener('input', function() {
+                questionDiv.querySelector('.question-points').textContent = `${this.value} نقطة`;
+            });
+            
+            // إضافة حدث لحذف السؤال
+            questionDiv.querySelector('.delete-question').addEventListener('click', function() {
+                if (questionsContainer.children.length > 1) {
+                    questionDiv.remove();
+                    renumberQuestions();
+                } else {
+                    showNotification('يجب أن يحتوي الاختبار على سؤال واحد على الأقل', 'error');
+                }
+            });
+            
+            questionsContainer.appendChild(questionDiv);
+        }
+        
+        // إعادة ترقيم الأسئلة بعد الحذف
+        function renumberQuestions() {
+            const questions = document.querySelectorAll('.question-item');
+            questions.forEach((question, index) => {
+                const questionNumber = index + 1;
+                question.setAttribute('data-question-id', questionNumber);
+                question.querySelector('.question-number').textContent = questionNumber;
+                
+                // تحديث معرّف حقل النقاط
+                const pointsInput = question.querySelector('.question-points-input');
+                pointsInput.id = `points-${questionNumber}`;
+            });
+        }
+        
+        // حفظ الاختبار
+        function saveTest() {
+            const testTitle = document.getElementById('test-title').value.trim();
+            if (!testTitle) {
+                showNotification('الرجاء إدخال عنوان للاختبار', 'error');
+                return;
+            }
+            
+            const questions = collectQuestionsData();
+            if (questions.length === 0) {
+                showNotification('الرجاء إضافة أسئلة للاختبار', 'error');
+                return;
+            }
+            
+            // الحصول على التواريخ
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            
+            // التحقق من صحة التواريخ
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                
+                if (end <= start) {
+                    showNotification('تاريخ النهاية يجب أن يكون بعد تاريخ البداية', 'error');
+                    return;
+                }
+            }
+            
+            // إنشاء كائن الاختبار
+            currentTest = {
+                id: generateTestId(),
+                title: testTitle,
+                description: document.getElementById('test-description').value.trim(),
+                questions: questions,
+                settings: {
+                    autoCorrect: document.getElementById('auto-correct').checked,
+                    passingScore: parseInt(document.getElementById('passing-score').value),
+                    maxAttempts: parseInt(document.getElementById('max-attempts').value),
+                    startDate: startDate,
+                    endDate: endDate
+                },
+                createdAt: new Date().toISOString(),
+                teacherAnswers: generateAnswerKey(questions)
+            };
+            
+            // حفظ الاختبار في التخزين المحلي
+            savedTests[currentTest.id] = currentTest;
+            localStorage.setItem('teacher_tests', JSON.stringify(savedTests));
+            
+            // إنشاء رابط الاختبار
+            const testLink = `${window.location.origin}${window.location.pathname.replace('teacher.html', '')}student.html`;
+            
+            // عرض رابط الاختبار
+            document.getElementById('test-link').textContent = testLink;
+            document.getElementById('test-link-container').style.display = 'block';
+            
+            showNotification('تم حفظ الاختبار بنجاح! يمكنك الآن مشاركة الرابط مع الطلاب');
+            
+            // تحديث قائمة الاختبارات
+            loadTestsList();
+        }
+        
+        // جمع بيانات الأسئلة
+        function collectQuestionsData() {
+            const questions = [];
+            const questionElements = document.querySelectorAll('.question-item');
+            
+            questionElements.forEach((questionElement, index) => {
+                const questionText = questionElement.querySelector('.question-text').value.trim();
+                if (!questionText) return;
+                
+                const question = {
+                    id: index + 1,
+                    text: questionText,
+                    options: {
+                        a: questionElement.querySelector('.option-a').value.trim(),
+                        b: questionElement.querySelector('.option-b').value.trim(),
+                        c: questionElement.querySelector('.option-c').value.trim(),
+                        d: questionElement.querySelector('.option-d').value.trim()
+                    },
+                    correctAnswer: questionElement.querySelector('.correct-option').value,
+                    points: parseInt(questionElement.querySelector('.question-points-input').value)
+                };
+                
+                // التحقق من اكتمال البيانات
+                if (question.options.a && question.options.b && question.options.c && question.options.d) {
+                    questions.push(question);
+                }
+            });
+            
+            return questions;
+        }
+        
+        // إنشاء مفتاح الإجابات للمعلم
+        function generateAnswerKey(questions) {
+            const answerKey = {};
+            questions.forEach(question => {
+                answerKey[question.id] = {
+                    correctAnswer: question.correctAnswer,
+                    points: question.points
+                };
+            });
+            return answerKey;
+        }
+        
+        // إنشاء معرّف فريد للاختبار
+        function generateTestId() {
+            return 'test_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // معاينة الاختبار
+        function previewTest() {
+            const questions = collectQuestionsData();
+            if (questions.length === 0) {
+                showNotification('الرجاء إضافة أسئلة أولاً', 'error');
+                return;
+            }
+            
+            // حفظ الاختبار مؤقتاً للمعاينة
+            const tempTest = {
+                id: 'preview',
+                title: document.getElementById('test-title').value.trim() || 'معاينة الاختبار',
+                questions: questions,
+                settings: {
+                    maxAttempts: 2
+                }
+            };
+            
+            localStorage.setItem('preview_test', JSON.stringify(tempTest));
+            
+            // فتح صفحة المعاينة في نافذة جديدة
+            window.open(`student.html?test=preview&preview=true`, '_blank');
+        }
+        
+        // تصدير الاختبار
+        function exportTest() {
+            const questions = collectQuestionsData();
+            if (questions.length === 0) {
+                showNotification('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            
+            const testData = {
+                title: document.getElementById('test-title').value.trim() || 'اختبار بدون عنوان',
+                description: document.getElementById('test-description').value.trim(),
+                questions: questions,
+                settings: {
+                    autoCorrect: document.getElementById('auto-correct').checked,
+                    passingScore: parseInt(document.getElementById('passing-score').value),
+                    maxAttempts: parseInt(document.getElementById('max-attempts').value),
+                    startDate: document.getElementById('start-date').value,
+                    endDate: document.getElementById('end-date').value
+                },
+                exportDate: new Date().toISOString()
+            };
+            
+            const exportJson = JSON.stringify(testData, null, 2);
+            
+            // إنشاء ملف للتحميل
+            const blob = new Blob([exportJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `test_export_${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('تم تصدير الاختبار بنجاح');
+        }
+        
+        // استيراد الاختبار
+        function importTest() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        
+                        // تعبئة البيانات في النموذج
+                        document.getElementById('test-title').value = importedData.title || '';
+                        document.getElementById('test-description').value = importedData.description || '';
+                        
+                        // مسح الأسئلة الحالية
+                        document.getElementById('questions-container').innerHTML = '';
+                        
+                        // إضافة الأسئلة المستوردة
+                        if (importedData.questions && importedData.questions.length > 0) {
+                            importedData.questions.forEach((question, index) => {
+                                addQuestion();
+                                
+                                // الحصول على آخر سؤال مضاف
+                                const questionElements = document.querySelectorAll('.question-item');
+                                const lastQuestion = questionElements[questionElements.length - 1];
+                                
+                                // تعبئة بيانات السؤال
+                                lastQuestion.querySelector('.question-text').value = question.text || '';
+                                lastQuestion.querySelector('.option-a').value = question.options.a || '';
+                                lastQuestion.querySelector('.option-b').value = question.options.b || '';
+                                lastQuestion.querySelector('.option-c').value = question.options.c || '';
+                                lastQuestion.querySelector('.option-d').value = question.options.d || '';
+                                lastQuestion.querySelector('.correct-option').value = question.correctAnswer || 'a';
+                                lastQuestion.querySelector('.question-points-input').value = question.points || 1;
+                                lastQuestion.querySelector('.question-points').textContent = `${question.points || 1} نقطة`;
+                            });
+                        }
+                        
+                        // تعبئة الإعدادات
+                        if (importedData.settings) {
+                            document.getElementById('auto-correct').checked = importedData.settings.autoCorrect !== false;
+                            document.getElementById('passing-score').value = importedData.settings.passingScore || 60;
+                            document.getElementById('max-attempts').value = importedData.settings.maxAttempts || 2;
+                            document.getElementById('start-date').value = importedData.settings.startDate || '';
+                            document.getElementById('end-date').value = importedData.settings.endDate || '';
+                        }
+                        
+                        showNotification('تم استيراد الاختبار بنجاح');
+                    } catch (error) {
+                        showNotification('خطأ في استيراد الملف. تأكد من صحة تنسيق JSON', 'error');
+                        console.error(error);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // استيراد قائمة الطلاب من ملف CSV
+        function importStudents() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv,.txt';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const csvData = event.target.result;
+                        const students = parseCSV(csvData);
+                        
+                        if (students.length === 0) {
+                            showNotification('لم يتم العثور على بيانات طلاب في الملف', 'error');
+                            return;
+                        }
+                        
+                        // حفظ قائمة الطلاب
+                        studentsList = students.reduce((acc, student) => {
+                            if (student.id && student.name) {
+                                acc[student.id] = student.name;
+                            }
+                            return acc;
+                        }, {});
+                        
+                        localStorage.setItem('students_list', JSON.stringify(studentsList));
+                        
+                        // عرض قائمة الطلاب
+                        loadStudentsList();
+                        
+                        showNotification(`تم استيراد ${Object.keys(studentsList).length} طالب بنجاح`);
+                    } catch (error) {
+                        showNotification('خطأ في استيراد الملف. تأكد من صحة تنسيق CSV', 'error');
+                        console.error(error);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // تحليل بيانات CSV
+        function parseCSV(csvData) {
+            const students = [];
+            const lines = csvData.split('\n');
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // تقسيم السطر باستخدام الفاصلة
+                const parts = line.split(',');
+                
+                if (parts.length >= 2) {
+                    const studentId = parts[0].trim();
+                    const studentName = parts[1].trim();
+                    
+                    if (studentId && studentName) {
+                        students.push({
+                            id: studentId,
+                            name: studentName
+                        });
+                    }
+                }
+            }
+            
+            return students;
+        }
+        
+        // تحميل نموذج ملف CSV
+        function downloadTemplate() {
+            const template = "رقم_الطالب,اسم_الطالب\n123456,أحمد محمد\n654321,سارة عبدالله\n789012,خالد سالم";
+            
+            const blob = new Blob([template], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'نموذج_قائمة_الطلاب.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('تم تحميل نموذج ملف CSV');
+        }
+        
+        // تحميل قائمة الطلاب
+        function loadStudentsList() {
+            const container = document.getElementById('students-list');
+            const noStudents = document.getElementById('no-students');
+            
+            if (!studentsList || Object.keys(studentsList).length === 0) {
+                noStudents.style.display = 'block';
+                container.style.display = 'none';
+                container.innerHTML = '';
+                return;
+            }
+            
+            noStudents.style.display = 'none';
+            container.style.display = 'block';
+            
+            let html = '';
+            let count = 1;
+            
+            for (const studentId in studentsList) {
+                html += `
+                    <div class="student-item">
+                        <div>
+                            <strong>${count}.</strong> ${studentsList[studentId]}
+                            <br><small style="color: #666;">رقم السجل: ${studentId}</small>
+                        </div>
+                        <div>
+                            <button class="btn btn-danger btn-sm delete-student" data-id="${studentId}" style="padding: 5px 10px; font-size: 12px;">حذف</button>
+                        </div>
+                    </div>
+                `;
+                count++;
+            }
+            
+            container.innerHTML = html;
+            
+            // إضافة أحداث لحذف الطلاب
+            container.querySelectorAll('.delete-student').forEach(button => {
+                button.addEventListener('click', function() {
+                    const studentId = this.getAttribute('data-id');
+                    deleteStudent(studentId);
+                });
+            });
+        }
+        
+        // حذف طالب
+        function deleteStudent(studentId) {
+            if (confirm(`هل أنت متأكد من حذف الطالب ${studentsList[studentId]}؟`)) {
+                delete studentsList[studentId];
+                localStorage.setItem('students_list', JSON.stringify(studentsList));
+                loadStudentsList();
+                showNotification('تم حذف الطالب بنجاح');
+            }
+        }
+        
+        // حذف جميع الطلاب
+        function clearStudents() {
+            if (Object.keys(studentsList).length === 0) {
+                showNotification('لا توجد طلاب لحذفها', 'warning');
+                return;
+            }
+            
+            if (confirm(`هل أنت متأكد من حذف جميع الطلاب (${Object.keys(studentsList).length} طالب)؟`)) {
+                studentsList = {};
+                localStorage.removeItem('students_list');
+                loadStudentsList();
+                showNotification('تم حذف جميع الطلاب بنجاح');
+            }
+        }
+        
+        // تحميل نتائج الطلاب
+        function loadResults() {
+            const resultsBody = document.getElementById('results-body');
+            resultsBody.innerHTML = '';
+            
+            if (!testResults || Object.keys(testResults).length === 0) {
+                document.getElementById('no-results').style.display = 'block';
+                document.getElementById('results-table').style.display = 'none';
+                document.getElementById('results-actions').style.display = 'none';
+                return;
+            }
+            
+            // عرض النتائج
+            let hasResults = false;
+            
+            for (const testId in testResults) {
+                const testData = testResults[testId];
+                
+                if (testData && testData.submissions && testData.submissions.length > 0) {
+                    hasResults = true;
+                    
+                    testData.submissions.forEach(submission => {
+                        const row = document.createElement('tr');
+                        
+                        const testInfo = savedTests[testId];
+                        const testTitle = testInfo ? testInfo.title : `اختبار ${testId.substring(0, 8)}`;
+                        const percentage = submission.totalPoints > 0 ? Math.round((submission.score / submission.totalPoints) * 100) : 0;
+                        const isPassing = percentage >= (testInfo?.settings?.passingScore || 60);
+                        const maxAttempts = testInfo?.settings?.maxAttempts || 2;
+                        const attemptsUsed = submission.attempts || 1;
+                        const remainingAttempts = maxAttempts - attemptsUsed;
+                        
+                        // الحصول على اسم الطالب من قائمة الطلاب إذا كان موجوداً
+                        let studentName = submission.studentName;
+                        if (studentsList[submission.studentId]) {
+                            studentName = studentsList[submission.studentId];
+                        }
+                        
+                        row.innerHTML = `
+                            <td>${studentName || 'طالب بدون اسم'}</td>
+                            <td>${submission.studentId || 'بدون'}</td>
+                            <td>${testTitle}</td>
+                            <td class="student-score">${submission.score}/${submission.totalPoints}</td>
+                            <td>${attemptsUsed}/${maxAttempts}</td>
+                            <td class="${isPassing ? 'student-pass' : 'student-fail'}">${isPassing ? 'ناجح' : 'راسب'}</td>
+                            <td>${new Date(submission.submittedAt).toLocaleString('ar-SA')}</td>
+                            <td>
+                                <button class="btn btn-secondary view-details" data-test="${testId}" data-student="${submission.studentId}">تفاصيل</button>
+                                ${remainingAttempts > 0 ? `<button class="btn btn-success add-attempt" data-test="${testId}" data-student="${submission.studentId}">إضافة محاولة</button>` : ''}
+                            </td>
+                        `;
+                        
+                        resultsBody.appendChild(row);
+                    });
+                }
+            }
+            
+            if (hasResults) {
+                document.getElementById('no-results').style.display = 'none';
+                document.getElementById('results-table').style.display = 'table';
+                document.getElementById('results-actions').style.display = 'flex';
+            } else {
+                document.getElementById('no-results').style.display = 'block';
+                document.getElementById('results-table').style.display = 'none';
+                document.getElementById('results-actions').style.display = 'none';
+            }
+        }
+        
+        // تصدير النتائج كملف CSV
+        function exportResults() {
+            if (!testResults || Object.keys(testResults).length === 0) {
+                showNotification('لا توجد نتائج للتصدير', 'error');
+                return;
+            }
+            
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            // عنوان CSV
+            csvContent += "اسم الطالب,رقم السجل,الاختبار,الدرجة,النسبة,المحاولات,الحالة,تاريخ الإرسال\n";
+            
+            // بيانات النتائج
+            for (const testId in testResults) {
+                const testData = testResults[testId];
+                
+                if (testData && testData.submissions && testData.submissions.length > 0) {
+                    const testTitle = savedTests[testId] ? savedTests[testId].title : `اختبار ${testId.substring(0, 8)}`;
+                    const maxAttempts = savedTests[testId]?.settings?.maxAttempts || 2;
+                    
+                    testData.submissions.forEach(submission => {
+                        // الحصول على اسم الطالب من قائمة الطلاب إذا كان موجوداً
+                        let studentName = submission.studentName;
+                        if (studentsList[submission.studentId]) {
+                            studentName = studentsList[submission.studentId];
+                        }
+                        
+                        const percentage = submission.totalPoints > 0 ? Math.round((submission.score / submission.totalPoints) * 100) : 0;
+                        const isPassing = percentage >= (savedTests[testId]?.settings?.passingScore || 60);
+                        const status = isPassing ? "ناجح" : "راسب";
+                        const date = new Date(submission.submittedAt).toLocaleDateString('ar-SA');
+                        const attemptsUsed = submission.attempts || 1;
+                        
+                        csvContent += `"${studentName || 'طالب بدون اسم'}","${submission.studentId || ''}","${testTitle}",${submission.score}/${submission.totalPoints},${percentage}%,${attemptsUsed}/${maxAttempts},${status},"${date}"\n`;
+                    });
+                }
+            }
+            
+            // تحميل الملف
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `نتائج_الطلاب_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('تم تصدير النتائج بنجاح');
+        }
+        
+        // حذف جميع النتائج
+        function clearResults() {
+            if (confirm('هل أنت متأكد من حذف جميع نتائج الطلاب؟ لا يمكن التراجع عن هذا الإجراء.')) {
+                testResults = {};
+                localStorage.removeItem('test_results');
+                loadResults();
+                showNotification('تم حذف جميع النتائج');
+            }
+        }
+        
+        // تحميل قائمة الاختبارات المخزنة
+        function loadTestsList() {
+            const testsList = document.getElementById('tests-list');
+            testsList.innerHTML = '';
+            
+            if (!savedTests || Object.keys(savedTests).length === 0) {
+                testsList.innerHTML = `
+                    <div class="empty-state">
+                        <div>📝</div>
+                        <p>لا توجد اختبارات مخزنة بعد</p>
+                        <p>قم بإنشاء اختبار جديد لحفظه هنا</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let testsHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">';
+            
+            for (const testId in savedTests) {
+                const test = savedTests[testId];
+                const questionCount = test.questions ? test.questions.length : 0;
+                const submissionCount = testResults[testId] ? testResults[testId].submissions.length : 0;
+                const date = new Date(test.createdAt).toLocaleDateString('ar-SA');
+                const maxAttempts = test.settings?.maxAttempts || 2;
+                const startDate = test.settings?.startDate ? new Date(test.settings.startDate).toLocaleString('ar-SA') : 'غير محدد';
+                const endDate = test.settings?.endDate ? new Date(test.settings.endDate).toLocaleString('ar-SA') : 'غير محدد';
+                
+                testsHTML += `
+                    <div style="background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.08);">
+                        <h3 style="margin-top: 0; color: #2c3e6e;">${test.title}</h3>
+                        <p>${test.description || 'بدون وصف'}</p>
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px; color: #666;">
+                            <span>${questionCount} أسئلة</span>
+                            <span>${maxAttempts} محاولات</span>
+                            <span>${submissionCount} إجابات</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 14px; color: #888;">
+                            <div><strong>تاريخ البداية:</strong> ${startDate}</div>
+                            <div><strong>تاريخ النهاية:</strong> ${endDate}</div>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 14px; color: #888;">أنشئ في: ${date}</div>
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button class="btn btn-secondary load-test-btn" data-test="${testId}" style="padding: 8px 15px; font-size: 14px;">تحميل</button>
+                            <button class="btn btn-danger delete-test-btn" data-test="${testId}" style="padding: 8px 15px; font-size: 14px;">حذف</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            testsHTML += '</div>';
+            testsList.innerHTML = testsHTML;
+            
+            // إضافة أحداث لأزرار التحكم
+            document.querySelectorAll('.load-test-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const testId = this.getAttribute('data-test');
+                    loadTestToForm(testId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-test-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const testId = this.getAttribute('data-test');
+                    deleteTest(testId);
+                });
+            });
+        }
+        
+        // تحميل اختبار إلى نموذج التحرير
+        function loadTestToForm(testId) {
+            const test = savedTests[testId];
+            if (!test) return;
+            
+            // تعبئة بيانات الاختبار
+            document.getElementById('test-title').value = test.title || '';
+            document.getElementById('test-description').value = test.description || '';
+            
+            if (test.settings) {
+                document.getElementById('auto-correct').checked = test.settings.autoCorrect !== false;
+                document.getElementById('passing-score').value = test.settings.passingScore || 60;
+                document.getElementById('max-attempts').value = test.settings.maxAttempts || 2;
+                document.getElementById('start-date').value = test.settings.startDate || '';
+                document.getElementById('end-date').value = test.settings.endDate || '';
+            }
+            
+            // مسح الأسئلة الحالية
+            document.getElementById('questions-container').innerHTML = '';
+            
+            // إضافة أسئلة الاختبار
+            if (test.questions && test.questions.length > 0) {
+                test.questions.forEach((question, index) => {
+                    addQuestion();
+                    
+                    // الحصول على آخر سؤال مضاف
+                    const questionElements = document.querySelectorAll('.question-item');
+                    const lastQuestion = questionElements[questionElements.length - 1];
+                    
+                    // تعبئة بيانات السؤال
+                    lastQuestion.querySelector('.question-text').value = question.text || '';
+                    lastQuestion.querySelector('.option-a').value = question.options.a || '';
+                    lastQuestion.querySelector('.option-b').value = question.options.b || '';
+                    lastQuestion.querySelector('.option-c').value = question.options.c || '';
+                    lastQuestion.querySelector('.option-d').value = question.options.d || '';
+                    lastQuestion.querySelector('.correct-option').value = question.correctAnswer || 'a';
+                    lastQuestion.querySelector('.question-points-input').value = question.points || 1;
+                    lastQuestion.querySelector('.question-points').textContent = `${question.points || 1} نقطة`;
+                });
+            }
+            
+            // الانتقال إلى تبويب إنشاء الاختبار
+            document.querySelector('[data-tab="create-test"]').click();
+            
+            showNotification('تم تحميل الاختبار بنجاح');
+        }
+        
+        // حذف اختبار
+        function deleteTest(testId) {
+            if (confirm('هل أنت متأكد من حذف هذا الاختبار؟ سيتم حذف جميع النتائج المرتبطة به أيضاً.')) {
+                delete savedTests[testId];
+                localStorage.setItem('teacher_tests', JSON.stringify(savedTests));
+                
+                // حذف النتائج المرتبطة بهذا الاختبار
+                if (testResults[testId]) {
+                    delete testResults[testId];
+                    localStorage.setItem('test_results', JSON.stringify(testResults));
+                    loadResults();
+                }
+                
+                loadTestsList();
+                showNotification('تم حذف الاختبار بنجاح');
+            }
+        }
+        
+        // توليد بيانات التصدير الكاملة
+        function generateExportData() {
+            const exportData = {
+                tests: savedTests,
+                results: testResults,
+                students: studentsList,
+                exportDate: new Date().toISOString(),
+                version: "1.0"
+            };
+            
+            const exportJson = JSON.stringify(exportData, null, 2);
+            document.getElementById('export-data').value = exportJson;
+            
+            showNotification('تم توليد بيانات التصدير');
+        }
+        
+        // تنفيذ استيراد البيانات
+        function executeImportData() {
+            const importJson = document.getElementById('import-data').value.trim();
+            
+            if (!importJson) {
+                showNotification('الرجاء لصق بيانات الاستيراد أولاً', 'error');
+                return;
+            }
+            
+            try {
+                const importedData = JSON.parse(importJson);
+                
+                if (importedData.tests) {
+                    // دمج الاختبارات المستوردة مع الحالية
+                    Object.assign(savedTests, importedData.tests);
+                    localStorage.setItem('teacher_tests', JSON.stringify(savedTests));
+                }
+                
+                if (importedData.results) {
+                    // دمج النتائج المستوردة مع الحالية
+                    Object.assign(testResults, importedData.results);
+                    localStorage.setItem('test_results', JSON.stringify(testResults));
+                    loadResults();
+                }
+                
+                if (importedData.students) {
+                    // دمج قائمة الطلاب المستوردة مع الحالية
+                    Object.assign(studentsList, importedData.students);
+                    localStorage.setItem('students_list', JSON.stringify(studentsList));
+                    loadStudentsList();
+                }
+                
+                loadTestsList();
+                showNotification('تم استيراد البيانات بنجاح');
+                document.getElementById('import-data').value = '';
+            } catch (error) {
+                showNotification('خطأ في استيراد البيانات. تأكد من صحة تنسيق JSON', 'error');
+                console.error(error);
+            }
+        }
+        
+        // عرض الإشعارات
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
