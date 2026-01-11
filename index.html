@@ -852,7 +852,7 @@
     </div>
     
     <script>
-        // قائمة الطلاب من Excel (تحميل تلقائي)
+        // قائمة الطلاب من Excel (مستخرجة ومنظفة)
         const excelStudents = [
             { name: 'اسامه سالم حمود العطوي', ssn: 1154173692 },
             { name: 'اسامه صالح جازي البلوي', ssn: 1157942705 },
@@ -914,7 +914,7 @@
             if (snapshot.empty) {
                 for (let student of excelStudents) {
                     await setDoc(doc(db, 'students', student.ssn.toString()), {
-                        name: student.name,
+                        name: student.name.trim(), // تنظيف المسافات
                         ssn: student.ssn
                     });
                 }
@@ -945,6 +945,7 @@
                 `;
                 grid.appendChild(card);
             });
+            updateDashboard(); // تحديث عدد الطلاب
         }
         
         // إضافة طالب جديد
@@ -964,7 +965,7 @@
                 loadStudents();
                 showAlert('تم إضافة الطالب بنجاح', 'success', 'studentAlert');
             } catch (error) {
-                showAlert('حدث خطأ في إضافة الطالب', 'error', 'studentAlert');
+                showAlert('حدث خطأ في إضافة الطالب (ربما السجل موجود مسبقاً)', 'error', 'studentAlert');
             }
         }
         
@@ -988,12 +989,14 @@
                 <button class="btn btn-danger btn-small" onclick="this.parentElement.remove(); updateOptions();"><i class="fas fa-trash"></i></button>
             `;
             document.getElementById('optionsList').appendChild(optionDiv);
+            updateOptions();
         }
         
         // تحديث الخيارات
         function updateOptions() {
-            options = Array.from(document.querySelectorAll('#optionsList .option-item input[type="text"]')).map(input => input.value);
-            correctAnswer = parseInt(document.querySelector('input[name="correctOption"]:checked').value);
+            options = Array.from(document.querySelectorAll('#optionsList .option-item input[type="text"]')).map(input => input.value.trim());
+            const checked = document.querySelector('input[name="correctOption"]:checked');
+            correctAnswer = checked ? parseInt(checked.value) : 0;
         }
         
         // إضافة سؤال
@@ -1014,7 +1017,7 @@
             
             if (currentQuestionType === 'mcq') {
                 updateOptions();
-                if (options.length < 2 || options.some(o => !o.trim())) {
+                if (options.length < 2 || options.some(o => !o)) {
                     alert('يرجى إضافة خيارين على الأقل وملء نصوصها');
                     return;
                 }
@@ -1093,7 +1096,7 @@
             
             if (!currentTest.title || !currentTest.subject || isNaN(currentTest.duration) || currentTest.questions.length === 0 ||
                 !startDate || !startTime || !endDate || !endTime) {
-                alert('يرجى ملء جميع الحقول وإضافة سؤال واحد على الأقل');
+                showAlert('يرجى ملء جميع الحقول وإضافة سؤال واحد على الأقل', 'error');
                 return;
             }
             
@@ -1106,8 +1109,9 @@
                 showAlert('تم نشر الاختبار بنجاح', 'success');
                 resetCreateForm();
                 await loadTests();
+                updateDashboard();
             } catch (error) {
-                showAlert('حدث خطأ في نشر الاختبار', 'error');
+                showAlert('حدث خطأ في نشر الاختبار: ' + error.message, 'error');
             }
         }
         
@@ -1135,6 +1139,7 @@
                 testsList.push({ id: doc.id, ...doc.data() });
             });
             updateTestsList();
+            updateDashboard();
         }
         
         // تحديث قائمة الاختبارات
@@ -1188,6 +1193,7 @@
                 resultsList.push({ id: doc.id, ...doc.data() });
             });
             updateResultsList();
+            updateDashboard();
         }
         
         // تحديث قائمة النتائج
@@ -1271,7 +1277,7 @@
             modal.style.alignItems = 'center';
             modal.style.justifyContent = 'center';
             modal.innerHTML = `
-                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 800px;">
+                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 800px; overflow: auto;">
                     <h2>نتائج ${test.title}</h2>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
@@ -1311,12 +1317,12 @@
         }
         
         // عرض رسالة
-        function showAlert(message, type, id = 'importAlert') {
+        function showAlert(message, type, id = 'studentAlert') {
             const alert = document.getElementById(id) || document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
             alert.style.display = 'block';
-            setTimeout(() => alert.style.display = 'none', 3000);
+            setTimeout(() => alert.style.display = 'none', 5000);
         }
         
         // بدء التهيئة
