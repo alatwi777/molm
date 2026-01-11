@@ -961,7 +961,7 @@
                     </p>
                 </div>
                 
-                <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleExcelImport(event)">
+                <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleExcelImport(event)" style="display: none;">
                 
                 <div id="importAlert" class="alert"></div>
                 
@@ -1092,13 +1092,8 @@
             try {
                 document.getElementById('firebaseStatus').innerHTML = '<i class="fas fa-sync-alt spinning"></i> جاري الاتصال...';
                 
-                // محاولة تسجيل الدخول مجهولاً أو باستخدام حساب المعلم
-                await auth.signInAnonymously().catch(async () => {
-                    // إذا فشل، حاول إنشاء مستخدم للمعلم
-                    const teacherEmail = `teacher_${Date.now()}@testsystem.com`;
-                    const teacherPassword = 'teacher123';
-                    await auth.createUserWithEmailAndPassword(teacherEmail, teacherPassword);
-                });
+                // محاولة تسجيل الدخول مجهولاً
+                await auth.signInAnonymously();
                 
                 const user = auth.currentUser;
                 currentTeacherId = user.uid;
@@ -1207,14 +1202,7 @@
                 showLoader('resultsLoader', true);
                 
                 // تحميل الطلاب
-                const studentsSnapshot = await db.collection('students')
-                    .where('teacherId', '==', currentTeacherId)
-                    .get();
-                
-                studentsList = [];
-                studentsSnapshot.forEach(doc => {
-                    studentsList.push({ id: doc.id, ...doc.data() });
-                });
+                await loadStudentsFromFirebase();
                 
                 // تحميل الاختبارات
                 const testsSnapshot = await db.collection('tests')
@@ -1223,7 +1211,13 @@
                 
                 testsList = [];
                 testsSnapshot.forEach(doc => {
-                    testsList.push({ id: doc.id, ...doc.data() });
+                    const testData = doc.data();
+                    // تحويل التواريخ لاستخدامها في JavaScript
+                    testsList.push({ 
+                        id: doc.id, 
+                        ...testData,
+                        createdAt: testData.createdAt ? testData.createdAt.toDate() : new Date()
+                    });
                 });
                 
                 // تحميل النتائج
@@ -1233,11 +1227,15 @@
                 
                 resultsList = [];
                 resultsSnapshot.forEach(doc => {
-                    resultsList.push({ id: doc.id, ...doc.data() });
+                    const resultData = doc.data();
+                    resultsList.push({ 
+                        id: doc.id, 
+                        ...resultData,
+                        completedAt: resultData.completedAt ? resultData.completedAt.toDate() : new Date()
+                    });
                 });
                 
                 // تحديث الواجهات
-                updateStudentsTable();
                 updateTestsList();
                 updateResultsList();
                 
@@ -1268,7 +1266,7 @@
                 
                 let totalQuestions = 0;
                 testsList.forEach(test => {
-                    totalQuestions += test.questions.length;
+                    totalQuestions += test.questions ? test.questions.length : 0;
                 });
                 document.getElementById('totalQuestions').textContent = totalQuestions;
                 
@@ -1507,9 +1505,6 @@
         // ========== حفظ الاختبار في Firebase ==========
         async function saveTest() {
             try {
-                // حفظ بيانات الرأس أولاً
-                saveHeaderData();
-                
                 // جمع بيانات الاختبار
                 currentTest.title = document.getElementById('testTitle').value.trim();
                 currentTest.subject = document.getElementById('testSubject').value.trim();
@@ -1545,32 +1540,23 @@
                 currentTest.teacherId = currentTeacherId;
                 currentTest.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                 currentTest.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                currentTest.isPublished = false;
                 
                 let testId;
                 
                 if (currentTest.id) {
                     // تحديث اختبار موجود
                     testId = currentTest.id;
-                    await db.collection('tests').doc(testId).update({
-                        title: currentTest.title,
-                        subject: currentTest.subject,
-                        description: currentTest.description,
-                        duration: currentTest.duration,
-                        passingScore: currentTest.passingScore,
-                        startTime: currentTest.startTime,
-                        endTime: currentTest.endTime,
-                        questions: currentTest.questions,
+                    await db.collection('tests').doc(testId).set({
+                        ...currentTest,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    }, { merge: true });
                 } else {
                     // إنشاء اختبار جديد
                     testId = 'TEST-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
                     currentTest.id = testId;
                     
-                    await db.collection('tests').doc(testId).set({
-                        ...currentTest,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    await db.collection('tests').doc(testId).set(currentTest);
                 }
                 
                 savedTestId = testId;
@@ -1812,93 +1798,150 @@
             }
         }
         
-        // معالجة استيراد Excel
+        // معالجة استيراد Excel - إصدارة مصححة
         async function handleExcelImport(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            const reader = new FileReader();
-            
-            reader.onload = async function(e) {
-                try {
-                    showLoader('studentsLoader', true);
-                    
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    
-                    if (jsonData.length === 0) {
-                        showSystemAlert('الملف لا يحتوي على بيانات', 'error');
-                        showLoader('studentsLoader', false);
-                        return;
-                    }
-                    
-                    let importedCount = 0;
-                    let duplicateCount = 0;
-                    
-                    // تحميل الطلاب الحاليين للتحقق من التكرار
-                    const currentStudents = await db.collection('students')
-                        .where('teacherId', '==', currentTeacherId)
-                        .get();
-                    
-                    const existingSsns = new Set();
-                    currentStudents.forEach(doc => {
-                        existingSsns.add(doc.data().ssn);
-                    });
-                    
-                    // استيراد كل طالب
-                    for (const row of jsonData) {
-                        const ssn = (row['رقم الطالب'] || row['السجل المدني'] || row['ssn'] || '').toString().trim();
-                        const name = (row['اسم الطالب'] || row['الاسم'] || row['name'] || '').toString().trim();
+            try {
+                showLoader('studentsLoader', true);
+                
+                // قراءة ملف Excel
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
                         
-                        if (ssn && name && ssn.length >= 10) {
-                            // التحقق من التكرار
-                            if (existingSsns.has(ssn)) {
-                                duplicateCount++;
-                                continue;
+                        // الحصول على أول ورقة
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // تحويل الورقة إلى JSON
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        console.log('بيانات Excel:', jsonData); // للتصحيح
+                        
+                        if (jsonData.length === 0) {
+                            showSystemAlert('الملف لا يحتوي على بيانات', 'error');
+                            showLoader('studentsLoader', false);
+                            return;
+                        }
+                        
+                        let importedCount = 0;
+                        let duplicateCount = 0;
+                        
+                        // تحميل الطلاب الحاليين للتحقق من التكرار
+                        const currentStudents = await db.collection('students')
+                            .where('teacherId', '==', currentTeacherId)
+                            .get();
+                        
+                        const existingSsns = new Set();
+                        currentStudents.forEach(doc => {
+                            existingSsns.add(doc.data().ssn);
+                        });
+                        
+                        // معالجة كل صف
+                        for (const row of jsonData) {
+                            console.log('معالجة صف:', row);
+                            
+                            // الحصول على البيانات من الأعمدة المختلفة
+                            let ssn = '';
+                            let name = '';
+                            
+                            // البحث عن أعمدة مختلفة ممكنة
+                            if (row['رقم الطالب']) {
+                                ssn = row['رقم الطالب'].toString().trim();
+                            } else if (row['رقم_الطالب']) {
+                                ssn = row['رقم_الطالب'].toString().trim();
+                            } else if (row['ssn']) {
+                                ssn = row['ssn'].toString().trim();
+                            } else if (row['B']) { // إذا كان العمود B يحتوي على الرقم
+                                ssn = row['B'].toString().trim();
                             }
                             
-                            const studentId = 'STU-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                            if (row['اسم الطالب']) {
+                                name = row['اسم الطالب'].toString().trim();
+                            } else if (row['اسم_الطالب']) {
+                                name = row['اسم_الطالب'].toString().trim();
+                            } else if (row['name']) {
+                                name = row['name'].toString().trim();
+                            } else if (row['A']) { // إذا كان العمود A يحتوي على الاسم
+                                name = row['A'].toString().trim();
+                            }
                             
-                            const student = {
-                                id: studentId,
-                                ssn: ssn,
-                                name: name,
-                                teacherId: currentTeacherId,
-                                registeredAt: firebase.firestore.FieldValue.serverTimestamp()
-                            };
+                            console.log(`تم استخراج: الاسم=${name}, الرقم=${ssn}`);
                             
-                            // حفظ في Firebase
-                            await db.collection('students').doc(studentId).set(student);
-                            
-                            // إضافة إلى القائمة المحلية
-                            studentsList.push(student);
-                            existingSsns.add(ssn);
-                            importedCount++;
+                            if (ssn && name && ssn.length >= 10) {
+                                // تنظيف رقم السجل المدني (إزالة أي مسافات أو رموز)
+                                ssn = ssn.replace(/\D/g, '');
+                                
+                                // التحقق من التكرار
+                                if (existingSsns.has(ssn)) {
+                                    duplicateCount++;
+                                    console.log(`تكرر: ${ssn}`);
+                                    continue;
+                                }
+                                
+                                const studentId = 'STU-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                                
+                                const student = {
+                                    id: studentId,
+                                    ssn: ssn,
+                                    name: name,
+                                    teacherId: currentTeacherId,
+                                    registeredAt: firebase.firestore.FieldValue.serverTimestamp()
+                                };
+                                
+                                // حفظ في Firebase
+                                await db.collection('students').doc(studentId).set(student);
+                                
+                                // إضافة إلى القائمة المحلية
+                                studentsList.push(student);
+                                existingSsns.add(ssn);
+                                importedCount++;
+                                
+                                console.log(`تم إضافة: ${name} - ${ssn}`);
+                            } else {
+                                console.log('بيانات غير كاملة:', { ssn, name });
+                            }
                         }
+                        
+                        // تحديث الجدول
+                        updateStudentsTable();
+                        showLoader('studentsLoader', false);
+                        
+                        let message = `✅ تم استيراد ${importedCount} طالب بنجاح إلى Firebase`;
+                        if (duplicateCount > 0) {
+                            message += ` (تم تجاهل ${duplicateCount} طالب مكرر)`;
+                        }
+                        
+                        showSystemAlert(message, 'success');
+                        updateDashboard();
+                        
+                        // مسح حقل الملف للسماح بإعادة التحميل
+                        document.getElementById('fileInput').value = '';
+                        
+                    } catch (error) {
+                        console.error('خطأ في معالجة Excel:', error);
+                        showSystemAlert('❌ حدث خطأ في قراءة الملف. تأكد من صحة التنسيق', 'error');
+                        showLoader('studentsLoader', false);
                     }
-                    
-                    // تحديث الجدول
-                    updateStudentsTable();
+                };
+                
+                reader.onerror = function() {
+                    showSystemAlert('❌ خطأ في قراءة الملف', 'error');
                     showLoader('studentsLoader', false);
-                    
-                    let message = `✅ تم استيراد ${importedCount} طالب بنجاح إلى Firebase`;
-                    if (duplicateCount > 0) {
-                        message += ` (تم تجاهل ${duplicateCount} طالب مكرر)`;
-                    }
-                    
-                    showSystemAlert(message, 'success');
-                    updateDashboard();
-                    
-                } catch (error) {
-                    console.error('Error:', error);
-                    showSystemAlert('حدث خطأ في قراءة الملف. تأكد من صحة التنسيق', 'error');
-                    showLoader('studentsLoader', false);
-                }
-            };
-            
-            reader.readAsArrayBuffer(file);
+                };
+                
+                reader.readAsArrayBuffer(file);
+                
+            } catch (error) {
+                console.error('خطأ عام:', error);
+                showSystemAlert('❌ حدث خطأ غير متوقع', 'error');
+                showLoader('studentsLoader', false);
+            }
         }
         
         // تحميل نموذج Excel
@@ -2089,8 +2132,8 @@
                     
                     const studentCount = resultsList.filter(r => r.testId === test.id).length;
                     
-                    const createdAt = test.createdAt && test.createdAt.toDate ? 
-                        test.createdAt.toDate().toLocaleString('ar-SA') : 
+                    const createdAt = test.createdAt ? 
+                        new Date(test.createdAt).toLocaleString('ar-SA') : 
                         'غير معروف';
                     
                     html += `
@@ -2107,7 +2150,7 @@
                                 <p><i class="fas fa-book"></i> المادة: ${test.subject}</p>
                                 <p><i class="fas fa-clock"></i> المدة: ${test.duration} دقيقة</p>
                                 <p><i class="fas fa-graduation-cap"></i> النجاح: ${test.passingScore}%</p>
-                                <p><i class="fas fa-question-circle"></i> الأسئلة: ${test.questions.length}</p>
+                                <p><i class="fas fa-question-circle"></i> الأسئلة: ${test.questions ? test.questions.length : 0}</p>
                                 <p><i class="fas fa-calendar-alt"></i> البدء: ${start.toLocaleString('ar-SA')}</p>
                                 <p><i class="fas fa-calendar-times"></i> الانتهاء: ${end.toLocaleString('ar-SA')}</p>
                                 <p><i class="fas fa-users"></i> أداء الاختبار: ${studentCount} طالب</p>
@@ -2210,8 +2253,8 @@
                             <p style="color: #666; line-height: 1.6;">${test.description || 'بدون وصف'}</p>
                         </div>
                         
-                        <h3 style="color: #2c3e50; margin-bottom: 20px;">الأسئلة (${test.questions.length})</h3>
-                        ${test.questions.map((q, i) => `
+                        <h3 style="color: #2c3e50; margin-bottom: 20px;">الأسئلة (${test.questions ? test.questions.length : 0})</h3>
+                        ${test.questions ? test.questions.map((q, i) => `
                             <div style="background: white; padding: 25px; border-radius: 10px; margin: 15px 0; border: 1px solid #e1e5eb; border-right: 5px solid ${q.type === 'mcq' ? '#4a6fa5' : '#9c27b0'}">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                     <h4 style="margin: 0; color: #2c3e50;">سؤال ${i+1}: ${q.text}</h4>
@@ -2236,7 +2279,7 @@
                                     <p style="color: #666;"><strong>تعليمات الإجابة:</strong> ${q.instructions || 'بدون تعليمات'}</p>
                                 `}
                             </div>
-                        `).join('')}
+                        `).join('') : '<p>لا توجد أسئلة</p>'}
                     </div>
                 `;
                 
@@ -2277,7 +2320,12 @@
                 
                 const testResults = [];
                 resultsSnapshot.forEach(doc => {
-                    testResults.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    testResults.push({ 
+                        id: doc.id, 
+                        ...data,
+                        completedAt: data.completedAt ? data.completedAt.toDate() : new Date()
+                    });
                 });
                 
                 const test = testsList.find(t => t.id === testId);
@@ -2297,8 +2345,8 @@
                 
                 let resultsHtml = '';
                 testResults.forEach((result, i) => {
-                    const completedAt = result.completedAt && result.completedAt.toDate ? 
-                        result.completedAt.toDate().toLocaleString('ar-SA') : 
+                    const completedAt = result.completedAt ? 
+                        result.completedAt.toLocaleString('ar-SA') : 
                         'غير معروف';
                     
                     const passed = result.percentage >= test.passingScore;
@@ -2393,7 +2441,12 @@
                 
                 const testResults = [];
                 resultsSnapshot.forEach(doc => {
-                    testResults.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    testResults.push({ 
+                        id: doc.id, 
+                        ...data,
+                        completedAt: data.completedAt ? data.completedAt.toDate() : new Date()
+                    });
                 });
                 
                 const test = testsList.find(t => t.id === testId);
@@ -2401,8 +2454,8 @@
                 if (!testResults.length) return;
                 
                 const exportData = testResults.map((r, i) => {
-                    const completedAt = r.completedAt && r.completedAt.toDate ? 
-                        r.completedAt.toDate().toLocaleString('ar-SA') : 
+                    const completedAt = r.completedAt ? 
+                        r.completedAt.toLocaleString('ar-SA') : 
                         'غير معروف';
                     
                     const passed = r.percentage >= (test?.passingScore || 60);
@@ -2464,7 +2517,7 @@
                     html += `
                         <div class="test-card published" style="margin-bottom: 30px;">
                             <h3>${test.title}</h3>
-                            <p style="color: #666; margin-bottom: 15px;">${test.subject} - ${test.createdAt && test.createdAt.toDate ? test.createdAt.toDate().toLocaleDateString('ar-SA') : 'غير معروف'}</p>
+                            <p style="color: #666; margin-bottom: 15px;">${test.subject} - ${test.createdAt ? new Date(test.createdAt).toLocaleDateString('ar-SA') : 'غير معروف'}</p>
                             
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
                                 <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; text-align: center;">
