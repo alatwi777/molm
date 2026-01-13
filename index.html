@@ -2524,5 +2524,46 @@
             }, 5000);
         }
     </script>
+    <!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+
+<!-- إعداد Firebase -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHYUyj36bCFbin-10KNHv2Y9BfaQ9tooY",
+    authDomain: "exam-system-teacher-student.firebaseapp.com",
+    projectId: "exam-system-teacher-student",
+    storageBucket: "exam-system-teacher-student.firebasestorage.app",
+    messagingSenderId: "982683818654",
+    appId: "1:982683818654:web:824126e45089984152398f",
+    measurementId: "G-Q2SFE6G9RE"
+  };
+
+  // تهيئة Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // Firestore
+  const db = firebase.firestore();
+
+  // تجربة حفظ بيانات
+  function testSave() {
+    db.collection("testCollection").add({
+      message: "مرحبا من موقع المعلم",
+      time: new Date()
+    })
+    .then((docRef) => {
+      alert("تم حفظ البيانات بنجاح في Firebase");
+      console.log("Document ID:", docRef.id);
+    })
+    .catch((error) => {
+      alert("حدث خطأ أثناء الحفظ");
+      console.error(error);
+    });
+  }
+</script>
+
 </body>
 </html>
+
+
